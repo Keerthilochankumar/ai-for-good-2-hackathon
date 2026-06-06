@@ -75,10 +75,24 @@ class ILPMatchingService:
         urgency_reward = urgency_weights.get(req.urgency.value, 1.0) * 1000.0
         return dist - urgency_reward
 
+    def rank_donors_by_priority(self, donors: List[User]) -> dict:
+        """
+        Ranks donors into Priority 1 (Bridged/Emergency) and Priority 2 (Regular).
+        """
+        ranked = {"Priority 1 (Bridged/Emergency)": [], "Priority 2 (Regular)": []}
+        for d in donors:
+            dtype = (d.donor_type or "").lower()
+            elstatus = (d.eligibility_status or "").lower()
+            if "bridge" in dtype or "bridge" in elstatus or "emergency" in dtype:
+                ranked["Priority 1 (Bridged/Emergency)"].append(d)
+            else:
+                ranked["Priority 2 (Regular)"].append(d)
+        return ranked
+
     async def get_top_matches_for_patient(self, request: BloodRequest, donors: List[User], limit: int = 10) -> List[Tuple[User, float, str]]:
         """
         Runs the penalty approach synchronously for a single patient to score donors, 
-        then uses LLM to validate the top candidates before returning them.
+        then uses LLM to validate the top candidates in bulk before returning them.
         """
         logger.info(f"Mapping Endpoint: Starting match process for Patient {request.id}. Found {len(donors)} raw matching blood group donors.")
         scored_donors = []
@@ -93,56 +107,57 @@ class ILPMatchingService:
         top_candidates = scored_donors[:limit * 2] # Get double the limit to account for AI rejections
         logger.info(f"Mapping Endpoint: Top {len(top_candidates)} candidates selected for AI validation based on spatial/urgency scoring.")
         
+        if not top_candidates:
+            return []
+            
+        candidate_donors = [c[0] for c in top_candidates]
+        ranked_groups = self.rank_donors_by_priority(candidate_donors)
+        
+        validated_results = await self.validate_matches_in_bulk_with_llm(request, ranked_groups, top_candidates)
+        
         final_matches = []
         for donor, dist, cost in top_candidates:
-            if len(final_matches) >= limit:
-                break
-                
-            logger.info(f"Mapping Endpoint: Running AI validation for candidate Donor {donor.id}")
-            is_valid, reason = await self.validate_match_with_llm(request, donor, penalty=cost)
-            logger.info(f"Mapping Endpoint: AI Validation result for Donor {donor.id} -> Valid: {is_valid} | Reason: {reason}")
-            
-            if is_valid:
-                final_matches.append((donor, dist, reason))
-                
+            val = validated_results.get(str(donor.id))
+            if val and val.get("is_valid"):
+                final_matches.append((donor, dist, val.get("reason", "OK")))
+                if len(final_matches) >= limit:
+                    break
+                    
         logger.info(f"Mapping Endpoint: Returning {len(final_matches)} final AI-validated matches.")
         return final_matches
 
-    async def validate_match_with_llm(self, req: BloodRequest, donor: User, penalty: float = 0.0) -> Tuple[bool, str]:
+    async def validate_matches_in_bulk_with_llm(self, req: BloodRequest, ranked_groups: dict, top_candidates: list) -> dict:
         """
-        Uses an LLM to evaluate the clinical and demographic suitability of the donor for the patient.
+        Uses an LLM to evaluate the clinical and demographic suitability of the donor list in bulk.
+        Returns a dict mapping donor_id to {"is_valid": bool, "reason": str}.
         """
         if not self.llm_client:
-            return True, "LLM not configured; bypassing validation."
+            return {str(d[0].id): {"is_valid": True, "reason": "LLM not configured"} for d in top_candidates}
             
-        prompt = f"""
-        You are a clinical decision support system validating a blood donation match.
-        Evaluate the following donor-patient pair for compatibility based on their extended profiles.
-        
-        Patient Profile:
-        Blood Group: {req.blood_group}
-        Urgency: {req.urgency.value}
-        Gender: {req.gender}
-        Expected Next Transfusion Date: {req.expected_next_transfusion_date}
-        
-        Donor Profile:
-        Blood Group: {donor.blood_group}
-        Donor Type: {donor.donor_type}
-        Gender: {donor.gender}
-        Eligibility Status: {donor.eligibility_status}
-        Account Status: {donor.account_status}
-        Donations Till Date: {donor.donations_till_date}
-        Last Contacted Date: {donor.last_contacted_date}
-        
-        System Calculated Penalty Score: {penalty:.2f} (lower is better, higher indicates longer distance or less urgency)
-        
-        Given these factors, is this a clinically and logistically safe match? Consider factors such as matching blood types, donor eligibility, urgency, and the calculated penalty score.
-        """
+        prompt = f"""You are a clinical decision support system validating blood donation matches.
+Evaluate the following donor candidates for the patient in bulk.
+Output a strict format using the provided tool without additional justification.
+
+Patient Profile:
+Blood Group: {req.blood_group}
+Urgency: {req.urgency.value}
+Gender: {req.gender}
+Expected Next Transfusion Date: {req.expected_next_transfusion_date}
+
+Donor Candidates (by Priority Rank):
+"""
+        cost_map = {str(d[0].id): d[2] for d in top_candidates}
+        for rank, d_list in ranked_groups.items():
+            if not d_list: continue
+            prompt += f"\n--- {rank} ---\n"
+            for d in d_list:
+                prompt += f"- ID: {d.id} | BG: {d.blood_group} | Type: {d.donor_type} | Eligibility: {d.eligibility_status} | Donations: {d.donations_till_date} | ILP Penalty: {cost_map[str(d.id)]:.2f}\n"
+                
         aws_access_key = settings.AWS_ACCESS_KEY_ID.strip('"\'') if settings.AWS_ACCESS_KEY_ID else None
         aws_secret_key = settings.AWS_SECRET_ACCESS_KEY.strip('"\'') if settings.AWS_SECRET_ACCESS_KEY else None
         
         if not aws_access_key or not aws_secret_key:
-            return True, "LLM not configured (missing AWS credentials); bypassing validation."
+            return {str(d[0].id): {"is_valid": True, "reason": "LLM missing credentials"} for d in top_candidates}
 
         try:
             from anthropic import AsyncAnthropicBedrock
@@ -157,40 +172,48 @@ class ILPMatchingService:
             )
             
             validation_tool = {
-                "name": "record_validation",
-                "description": "Record the clinical validation result for the donor-patient blood match.",
+                "name": "record_bulk_validation",
+                "description": "Record the clinical validation results for the list of donor candidates.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
-                        "is_valid": {
-                            "type": "boolean",
-                            "description": "Whether the match is clinically and logistically safe."
-                        },
-                        "reason": {
-                            "type": "string",
-                            "description": "Short explanation of the decision."
+                        "results": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "donor_id": {"type": "string"},
+                                    "is_valid": {"type": "boolean"},
+                                    "reason": {"type": "string", "description": "Short explanation (e.g., 'Match OK')"}
+                                },
+                                "required": ["donor_id", "is_valid", "reason"]
+                            }
                         }
                     },
-                    "required": ["is_valid", "reason"]
+                    "required": ["results"]
                 }
             }
             
             response = await client.messages.create(
                 model=model_id,
-                max_tokens=300,
-                system="You validate donor-patient blood match safety. Use the provided tool to output your validation result.",
+                max_tokens=1000,
+                system="You validate donor-patient blood match safety in bulk. Use the provided tool to output your results. Provide simple and short reasons.",
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.0,
                 tools=[validation_tool],
-                tool_choice={"type": "tool", "name": "record_validation"}
+                tool_choice={"type": "tool", "name": "record_bulk_validation"}
             )
             
             for content_block in response.content:
-                if content_block.type == 'tool_use' and content_block.name == 'record_validation':
-                    result = content_block.input
-                    return result.get("is_valid", True), result.get("reason", "No reason provided")
+                if content_block.type == 'tool_use' and content_block.name == 'record_bulk_validation':
+                    items = content_block.input.get("results", [])
+                    return {item["donor_id"]: {"is_valid": item["is_valid"], "reason": item["reason"]} for item in items}
             
-            return True, "No tool use found in LLM response, fallback to valid."
+            return {str(d[0].id): {"is_valid": True, "reason": "No tool used"} for d in top_candidates}
         except Exception as e:
             logger.error(f"Error validating match with LLM: {str(e)}")
-            return True, "Error calling LLM, fallback to valid."
+            return {str(d[0].id): {"is_valid": True, "reason": "LLM Error"} for d in top_candidates}
+
+    async def validate_match_with_llm(self, req: BloodRequest, donor: User, penalty: float = 0.0) -> Tuple[bool, str]:
+        """Legacy method for batch optimizing 1 by 1."""
+        return True, "Legacy validation bypassed"

@@ -116,8 +116,11 @@ class MatchResponse(BaseModel):
     distance_km: float
     llm_reasoning: Optional[str] = None
 
+from fastapi import BackgroundTasks
+from app.tasks.optimization_tasks import run_ilp_batch_async
+
 @router.post("/", response_model=PatientResponse, status_code=status.HTTP_201_CREATED)
-async def create_patient(patient_in: PatientCreate, db: AsyncSession = Depends(get_db)):
+async def create_patient(patient_in: PatientCreate, background_tasks: BackgroundTasks, db: AsyncSession = Depends(get_db)):
     bg_map = {
         "A+": BloodGroup.A_POS, "A-": BloodGroup.A_NEG,
         "B+": BloodGroup.B_POS, "B-": BloodGroup.B_NEG,
@@ -154,7 +157,78 @@ async def create_patient(patient_in: PatientCreate, db: AsyncSession = Depends(g
     db.add(req)
     await db.commit()
     await db.refresh(req)
+    
+    from app.api.v1.ws import manager
+    await manager.broadcast("NEW_PATIENT_REQUEST", {
+        "id": str(req.id),
+        "name": req.patient_name,
+        "blood_group": req.blood_group.value
+    })
+    
     return req
+
+from app.tasks.optimization_tasks import run_ilp_single_async
+
+@router.post("/{patient_id}/trigger_match", response_model=dict)
+async def trigger_match(patient_id: uuid.UUID, background_tasks: BackgroundTasks):
+    """Manually triggers the ILP match specifically for this patient."""
+    background_tasks.add_task(run_ilp_single_async, patient_id)
+    return {"message": "Match pipeline started for patient."}
+
+@router.post("/{patient_id}/lock_match/{donor_id}", response_model=PatientResponse)
+async def lock_match(patient_id: uuid.UUID, donor_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Locks the donor and marks the request as fulfilled."""
+    # Fetch Patient Request
+    req_result = await db.execute(select(BloodRequest).where(BloodRequest.id == patient_id))
+    req = req_result.scalars().first()
+    if not req:
+        raise HTTPException(status_code=404, detail="Patient Request not found")
+        
+    # Fetch Donor
+    donor_result = await db.execute(select(User).where(User.id == donor_id))
+    donor = donor_result.scalars().first()
+    if not donor:
+        raise HTTPException(status_code=404, detail="Donor not found")
+        
+    # Lock them
+    donor.is_available = False
+    req.status = "FULFILLED"
+    
+    from app.models.match import MatchRequest
+    match_res = await db.execute(
+        select(MatchRequest).where(MatchRequest.request_id == patient_id, MatchRequest.donor_id == donor_id)
+    )
+    match = match_res.scalars().first()
+    if match:
+        match.status = "ACCEPTED"
+        
+    await db.commit()
+    await db.refresh(req)
+    
+    from app.api.v1.ws import manager
+    await manager.broadcast("MATCH_LOCKED", {
+        "request_id": str(patient_id),
+        "donor_id": str(donor_id)
+    })
+    
+    return req
+
+@router.get("/", response_model=List[PatientResponse])
+async def get_all_patients(
+    skip: int = 0, 
+    limit: int = 100, 
+    q: Optional[str] = None,
+    db: AsyncSession = Depends(get_db)
+):
+    query = select(BloodRequest)
+    if q:
+        search = f"%{q}%"
+        query = query.where(
+            (BloodRequest.patient_name.ilike(search)) | 
+            (BloodRequest.hospital_name.ilike(search))
+        )
+    result = await db.execute(query.offset(skip).limit(limit))
+    return result.scalars().all()
 
 @router.put("/{patient_id}", response_model=PatientResponse)
 async def update_patient(patient_id: uuid.UUID, patient_in: PatientUpdate, db: AsyncSession = Depends(get_db)):

@@ -69,5 +69,14 @@ services:
         condition: service_healthy
     command: celery -A app.core.celery_app worker --loglevel=info -B
 
+  fe:
+    build:
+      context: ../fe
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
 volumes:
   postgres_data:

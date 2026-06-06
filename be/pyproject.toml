@@ -22,4 +22,5 @@ dependencies = [
     "structlog>=24.4",
     "pandas>=2.2",
     "boto3>=1.43.24",
+    "python-telegram-bot>=22.7",
 ]

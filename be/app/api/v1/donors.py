@@ -115,12 +115,18 @@ class DonorResponse(BaseModel):
 async def get_donors(
     skip: int = 0,
     limit: int = 100,
+    q: Optional[str] = None,
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Retrieve users/donors for the dashboard with pagination.
+    Retrieve users/donors for the dashboard with pagination and optional search.
     """
-    result = await db.execute(select(User).offset(skip).limit(limit))
+    query = select(User)
+    if q:
+        search = f"%{q}%"
+        query = query.where((User.name.ilike(search)) | (User.phone.ilike(search)))
+        
+    result = await db.execute(query.offset(skip).limit(limit))
     return result.scalars().all()
 
 @router.post("/", response_model=DonorResponse, status_code=status.HTTP_201_CREATED)
