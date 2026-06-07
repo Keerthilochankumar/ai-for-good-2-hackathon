@@ -1,14 +1,14 @@
-const API_BASE = 'http://localhost:8000/api/v1';
+const API_BASE = 'http://dev-be-y3xjsd-eb65f5-18-207-163-209.sslip.io/';
 
 export const importDataset = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
-  
+
   const response = await fetch(`${API_BASE}/admin/import`, {
     method: 'POST',
     body: formData,
   });
-  
+
   if (!response.ok) {
     throw new Error('Failed to import dataset');
   }
@@ -20,7 +20,7 @@ export const getDonors = async (skip = 0, limit = 100, q = '') => {
   url.searchParams.append('skip', skip);
   url.searchParams.append('limit', limit);
   if (q) url.searchParams.append('q', q);
-  
+
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch donors');
