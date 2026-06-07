@@ -5,22 +5,22 @@ import { Activity, CheckCircle2 } from 'lucide-react';
 import { sendTelegramMessage } from '../services/telegram';
 
 export function EventsPage() {
-  const { events, isConnected } = usePipelineEvents('ws://localhost:8000/api/v1/ws/events');
+  const { events, isConnected } = usePipelineEvents('ws://dev-be-y3xjsd-eb65f5-18-207-163-209.sslip.io/api/v1/ws/events');
   const processedMatches = useRef(new Set());
 
   // Monitor for MATCH_FOUND events to trigger Telegram message
   useEffect(() => {
     if (events.length > 0) {
       const latestEvent = events[events.length - 1];
-      
+
       if (latestEvent.event === 'MATCH_FOUND') {
         const matchId = latestEvent.data.match_id || latestEvent.data.request_id;
         if (matchId && !processedMatches.current.has(matchId)) {
           processedMatches.current.add(matchId);
-          
+
           const donorId = latestEvent.data.donor_id;
           const msg = `🚨 URGENT: Blood match found! 🚨\n\nA patient needs your help. You have been matched as a potential donor. Please reply YES to accept or NO to decline.`;
-          
+
           sendTelegramMessage(msg).catch(console.error);
         }
       }
@@ -28,7 +28,7 @@ export function EventsPage() {
   }, [events]);
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
@@ -54,7 +54,7 @@ export function EventsPage() {
           </div>
         ) : (
           events.map((ev, i) => (
-            <motion.div 
+            <motion.div
               key={i}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}

@@ -2,7 +2,7 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 
 const PipelineEventsContext = createContext({ events: [], isConnected: false });
 
-export function PipelineEventsProvider({ children, url = 'ws://localhost:8000/api/v1/ws/events' }) {
+export function PipelineEventsProvider({ children, url = 'ws://dev-be-y3xjsd-eb65f5-18-207-163-209.sslip.io/api/v1/ws/events' }) {
   const [events, setEvents] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
 

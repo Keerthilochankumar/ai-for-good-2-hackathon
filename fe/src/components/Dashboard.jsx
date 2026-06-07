@@ -12,10 +12,10 @@ export function Dashboard() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [bloodFilter, setBloodFilter] = useState('ALL');
   const [stats, setStats] = useState({ totalDonors: 0, totalPatients: 0, successRate: 0, ratio: 0, bgCounts: {} });
-  
+
   // Pipeline Events WebSocket
-  const { events, isConnected } = usePipelineEvents('ws://localhost:8000/api/v1/ws/events');
-  
+  const { events, isConnected } = usePipelineEvents('ws://dev-be-y3xjsd-eb65f5-18-207-163-209.sslip.io/api/v1/ws/events');
+
   // Extract active matching state from events
   const { activePatientId, activeMatches } = useMemo(() => {
     let pId = null;
@@ -23,12 +23,12 @@ export function Dashboard() {
     if (events.length > 0) {
       const latest = events[events.length - 1];
       if (latest.event === 'MATCH_EVALUATING') {
-         pId = latest.data.request_id;
-         // Assume event data contains donor ids being evaluated, if not we just use mock
-         m = (latest.data.potential_donors || []).map(d => ({ donor_id: d, status: 'evaluating' }));
+        pId = latest.data.request_id;
+        // Assume event data contains donor ids being evaluated, if not we just use mock
+        m = (latest.data.potential_donors || []).map(d => ({ donor_id: d, status: 'evaluating' }));
       } else if (latest.event === 'MATCH_FOUND') {
-         pId = latest.data.match_id || latest.data.request_id; // Sometimes it's request_id
-         m = [{ donor_id: latest.data.donor_id, status: 'selected' }];
+        pId = latest.data.match_id || latest.data.request_id; // Sometimes it's request_id
+        m = [{ donor_id: latest.data.donor_id, status: 'selected' }];
       }
     }
     return { activePatientId: pId, activeMatches: m };
@@ -79,7 +79,7 @@ export function Dashboard() {
   }, [patients, bloodFilter]);
 
   const StatCard = ({ title, value, icon: Icon, delay }) => (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
@@ -87,7 +87,7 @@ export function Dashboard() {
     >
       {/* Decorative gradient blob inside card */}
       <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-400/10 rounded-full blur-xl pointer-events-none"></div>
-      
+
       <div className="bg-red-50 p-3 rounded-full shadow-sm relative z-10">
         <Icon className="text-[var(--color-primary)] w-6 h-6" />
       </div>
@@ -128,12 +128,12 @@ export function Dashboard() {
             </div>
           </div>
           <div className="flex-1 relative">
-            <MapDashboard 
-              donors={filteredDonors} 
-              patients={filteredPatients} 
-              activePatientId={activePatientId} 
-              activeMatches={activeMatches} 
-              onUserClick={setSelectedUser} 
+            <MapDashboard
+              donors={filteredDonors}
+              patients={filteredPatients}
+              activePatientId={activePatientId}
+              activeMatches={activeMatches}
+              onUserClick={setSelectedUser}
             />
           </div>
         </div>
@@ -155,23 +155,21 @@ export function Dashboard() {
             <div className="grid grid-cols-2 gap-3 relative z-10">
               <button
                 onClick={() => setBloodFilter('ALL')}
-                className={`py-3 px-4 rounded-xl font-bold transition-all ${
-                  bloodFilter === 'ALL'
+                className={`py-3 px-4 rounded-xl font-bold transition-all ${bloodFilter === 'ALL'
                     ? 'bg-[var(--color-ink)] text-white shadow-md'
                     : 'bg-white text-[var(--color-ink)] border border-[var(--color-hairline)] hover:border-gray-300 hover:shadow-sm'
-                }`}
+                  }`}
               >
                 ALL
               </button>
-              {Object.entries(stats.bgCounts).sort((a,b) => b[1] - a[1]).map(([bg, count]) => (
+              {Object.entries(stats.bgCounts).sort((a, b) => b[1] - a[1]).map(([bg, count]) => (
                 <button
                   key={bg}
                   onClick={() => setBloodFilter(bg)}
-                  className={`py-3 px-4 rounded-xl font-bold transition-all flex justify-between items-center ${
-                    bloodFilter === bg
+                  className={`py-3 px-4 rounded-xl font-bold transition-all flex justify-between items-center ${bloodFilter === bg
                       ? 'bg-[var(--color-primary)] text-white shadow-md'
                       : 'bg-white text-[var(--color-ink)] border border-[var(--color-hairline)] hover:border-gray-300 hover:shadow-sm'
-                  }`}
+                    }`}
                 >
                   <span>{bg}</span>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${bloodFilter === bg ? 'bg-white/20' : 'bg-gray-100 text-gray-500'}`}>
