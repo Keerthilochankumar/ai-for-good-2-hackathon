@@ -1,4 +1,15 @@
-const API_BASE = import.meta.env.Backend_Api
+const API_BASE = import.meta.env.VITE_Backend_Api || import.meta.env.Backend_Api || '';
+
+const getUrl = (path) => {
+  let base = API_BASE ? API_BASE.replace(/\/+$/, '') : '';
+  let subPath = path.startsWith('/') ? path : `/${path}`;
+  const fullPath = base ? `${base}${subPath}` : subPath;
+  
+  if (fullPath.startsWith('http://') || fullPath.startsWith('https://')) {
+    return new URL(fullPath);
+  }
+  return new URL(fullPath, window.location.origin);
+};
 
 export const importDataset = async (file) => {
   const formData = new FormData();
@@ -16,7 +27,7 @@ export const importDataset = async (file) => {
 };
 
 export const getDonors = async (skip = 0, limit = 100, q = '') => {
-  const url = new URL(`${API_BASE}/donors/`);
+  const url = getUrl('/donors/');
   url.searchParams.append('skip', skip);
   url.searchParams.append('limit', limit);
   if (q) url.searchParams.append('q', q);
@@ -29,7 +40,7 @@ export const getDonors = async (skip = 0, limit = 100, q = '') => {
 };
 
 export const getPatients = async (skip = 0, limit = 100, q = '') => {
-  const url = new URL(`${API_BASE}/patients/`);
+  const url = getUrl('/patients/');
   url.searchParams.append('skip', skip);
   url.searchParams.append('limit', limit);
   if (q) url.searchParams.append('q', q);
@@ -86,7 +97,7 @@ export const lockMatch = async (patientId, donorId) => {
 };
 
 export const getStats = async (bloodGroup = 'ALL') => {
-  const url = new URL(`${API_BASE}/stats`);
+  const url = getUrl('/stats');
   if (bloodGroup && bloodGroup !== 'ALL') {
     url.searchParams.append('blood_group', bloodGroup);
   }

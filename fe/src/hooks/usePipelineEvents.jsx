@@ -2,7 +2,27 @@ import React, { useState, useEffect, createContext, useContext } from 'react';
 
 const PipelineEventsContext = createContext({ events: [], isConnected: false });
 
-export function PipelineEventsProvider({ children, url = 'wss://dev-be-y3xjsd-eb65f5-18-207-163-209.sslip.io/api/v1/ws/events' }) {
+const getDefaultWsUrl = () => {
+  const apiBase = import.meta.env.VITE_Backend_Api || import.meta.env.Backend_Api;
+  if (apiBase) {
+    try {
+      let absoluteApiBase = apiBase;
+      if (apiBase.startsWith('/')) {
+        absoluteApiBase = `${window.location.origin}${apiBase}`;
+      }
+      const urlObj = new URL(absoluteApiBase);
+      urlObj.protocol = urlObj.protocol === 'https:' ? 'wss:' : 'ws:';
+      const path = urlObj.pathname.endsWith('/') ? `${urlObj.pathname}ws/events` : `${urlObj.pathname}/ws/events`;
+      urlObj.pathname = path;
+      return urlObj.toString();
+    } catch (e) {
+      console.error('Failed to parse apiBase for WebSocket URL', e);
+    }
+  }
+  return 'wss://dev-be-y3xjsd-eb65f5-18-207-163-209.sslip.io/api/v1/ws/events';
+};
+
+export function PipelineEventsProvider({ children, url }) {
   const [events, setEvents] = useState([]);
   const [isConnected, setIsConnected] = useState(false);
 
@@ -12,7 +32,8 @@ export function PipelineEventsProvider({ children, url = 'wss://dev-be-y3xjsd-eb
     let isIntentionalClose = false;
 
     const connect = () => {
-      ws = new WebSocket(url);
+      const targetUrl = url || getDefaultWsUrl();
+      ws = new WebSocket(targetUrl);
 
       ws.onopen = () => {
         setIsConnected(true);
