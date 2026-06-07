@@ -3,6 +3,9 @@ FROM python:3.12-slim AS builder
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
+RUN apt-get update && apt-get install -y libpq-dev gcc
+RUN pip install psycopg2
+
 # Change working directory
 WORKDIR /app
 
