@@ -1,4 +1,4 @@
-const API_BASE = 'http://dev-be-y3xjsd-eb65f5-18-207-163-209.sslip.io/';
+const API_BASE = 'http://dev-be-y3xjsd-eb65f5-18-207-163-209.sslip.io';
 
 export const importDataset = async (file) => {
   const formData = new FormData();
