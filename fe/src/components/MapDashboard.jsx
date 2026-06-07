@@ -112,10 +112,10 @@ export function MapDashboard({ donors, patients = [], activePatientId = null, ac
             type="line"
             filter={['==', 'status', 'evaluating']}
             paint={{
-              'line-color': '#facc15',
-              'line-width': 2,
+              'line-color': '#eab308',
+              'line-width': 3,
               'line-dasharray': [2, 2],
-              'line-opacity': 0.6
+              'line-opacity': 1.0
             }}
           />
           <Layer 
@@ -123,9 +123,9 @@ export function MapDashboard({ donors, patients = [], activePatientId = null, ac
             type="line"
             filter={['==', 'status', 'selected']}
             paint={{
-              'line-color': '#22c55e',
-              'line-width': 4,
-              'line-opacity': 0.9
+              'line-color': '#16a34a',
+              'line-width': 5,
+              'line-opacity': 1.0
             }}
           />
         </Source>

@@ -83,20 +83,30 @@ export function Dashboard() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
-      className="bg-[var(--color-surface-card)] border border-[var(--color-hairline)] p-6 rounded-2xl shadow-sm flex items-center gap-4"
+      className="bg-blue-50/80 backdrop-blur-sm border border-blue-200 p-6 rounded-2xl shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow relative overflow-hidden"
     >
-      <div className="bg-red-50 p-3 rounded-full">
+      {/* Decorative gradient blob inside card */}
+      <div className="absolute -right-4 -top-4 w-24 h-24 bg-blue-400/10 rounded-full blur-xl pointer-events-none"></div>
+      
+      <div className="bg-red-50 p-3 rounded-full shadow-sm relative z-10">
         <Icon className="text-[var(--color-primary)] w-6 h-6" />
       </div>
-      <div>
-        <div className="text-[var(--color-ash)] text-sm font-semibold">{title}</div>
-        <div className="text-2xl font-bold text-[var(--color-ink)]">{value}</div>
+      <div className="relative z-10">
+        <div className="text-blue-800/70 text-sm font-semibold">{title}</div>
+        <div className="text-2xl font-bold text-blue-900">{value}</div>
       </div>
     </motion.div>
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Background Blood Drop Watermark */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-[-1] overflow-hidden">
+        <svg viewBox="0 0 24 24" fill="currentColor" className="text-red-600 opacity-[0.08] w-[120vh] h-[120vh] min-w-[700px] min-h-[700px] -translate-y-32">
+          <path d="M12 2C12 2 4 9.9 4 15.4C4 19.8 7.6 23.4 12 23.4C16.4 23.4 20 19.8 20 15.4C20 9.9 12 2 12 2Z" />
+        </svg>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard title="Total Donors" value={stats.totalDonors} icon={Users} delay={0.1} />
@@ -135,7 +145,14 @@ export function Dashboard() {
             <p className="text-sm text-[var(--color-ash)]">Filter donors visible on the map.</p>
           </div>
           <div className="flex-1 bg-gradient-to-b from-gray-50 to-white relative p-6 overflow-y-auto">
-            <div className="grid grid-cols-2 gap-3">
+            {/* Background Watermark for Filter */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0 overflow-hidden">
+              <svg viewBox="0 0 24 24" fill="currentColor" className="text-red-600 opacity-[0.05] w-[300px] h-[300px]">
+                <path d="M12 2C12 2 4 9.9 4 15.4C4 19.8 7.6 23.4 12 23.4C16.4 23.4 20 19.8 20 15.4C20 9.9 12 2 12 2Z" />
+              </svg>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 relative z-10">
               <button
                 onClick={() => setBloodFilter('ALL')}
                 className={`py-3 px-4 rounded-xl font-bold transition-all ${

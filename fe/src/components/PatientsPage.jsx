@@ -174,7 +174,7 @@ export function PatientsPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-full max-w-lg bg-[var(--color-surface)] shadow-2xl z-[101] overflow-y-auto"
+              className="fixed top-0 right-0 h-full w-full max-w-lg bg-white shadow-2xl z-[101] overflow-y-auto"
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-2">
@@ -203,30 +203,30 @@ export function PatientsPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.1 }}
                         key={idx} 
-                        className="bg-white border border-[var(--color-hairline)] shadow-sm hover:shadow-md transition-shadow p-5 rounded-2xl relative overflow-hidden"
+                        className="bg-white border-2 border-green-100 shadow-[0_4px_20px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_rgba(34,197,94,0.12)] transition-all p-6 rounded-[2rem] relative overflow-hidden group"
                       >
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-green-50 to-transparent rounded-bl-full z-0" />
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-green-100/50 to-transparent rounded-bl-full z-0 pointer-events-none transition-transform group-hover:scale-110" />
                         
-                        <div className="flex justify-between items-start mb-3 relative z-10">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
-                              <User size={20} />
+                        <div className="flex justify-between items-start mb-4 relative z-10">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-600 shadow-sm border border-green-100">
+                              <User size={24} />
                             </div>
                             <div>
-                              <h3 className="font-bold text-[var(--color-ink)] text-lg">{match.donor_name}</h3>
-                              <div className="flex items-center gap-1 text-sm text-[var(--color-ash)]">
-                                <MapPin size={14} className="text-gray-400" /> {match.distance_km} km away
+                              <h3 className="font-bold text-[var(--color-ink)] text-xl mb-1">{match.donor_name}</h3>
+                              <div className="flex items-center gap-1 text-sm font-semibold text-gray-500">
+                                <MapPin size={16} className="text-gray-400" /> {match.distance_km} km away
                               </div>
                             </div>
                           </div>
-                          <span className="bg-[var(--color-primary)] text-white px-3 py-1 rounded-full font-bold shadow-sm flex items-center gap-1">
-                            <DropletIcon size={14} fill="currentColor" /> {match.blood_group}
+                          <span className="bg-green-100 text-green-800 px-4 py-1.5 rounded-full font-bold shadow-sm flex items-center gap-2 border border-green-200">
+                            <DropletIcon size={16} fill="currentColor" /> {match.blood_group}
                           </span>
                         </div>
                         
                         {match.llm_reasoning && (
-                          <div className="text-sm bg-blue-50/50 border border-blue-100 text-blue-800 p-3 rounded-xl mt-3 mb-4 leading-relaxed relative z-10">
-                            <strong>AI Match Reason:</strong> {match.llm_reasoning}
+                          <div className="text-sm bg-gray-50 border border-gray-100 text-gray-700 p-4 rounded-2xl mt-4 mb-5 leading-relaxed relative z-10 shadow-inner">
+                            <strong className="text-gray-900 block mb-1">🤖 AI Match Reasoning:</strong> {match.llm_reasoning}
                           </div>
                         )}
                         
@@ -234,19 +234,19 @@ export function PatientsPage() {
                           <button 
                             onClick={() => handleLockMatch(match.donor_id)}
                             disabled={lockingDonorId === match.donor_id}
-                            className="w-full relative z-10 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 active:bg-green-700 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-[0_4px_14px_0_rgba(34,197,94,0.39)] hover:shadow-[0_6px_20px_rgba(34,197,94,0.23)] disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full relative z-10 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 active:bg-green-800 text-white font-bold py-4 px-4 rounded-xl transition-all shadow-[0_4px_14px_0_rgba(34,197,94,0.39)] hover:shadow-[0_6px_20px_rgba(34,197,94,0.23)] disabled:opacity-50 disabled:cursor-not-allowed text-lg"
                           >
                             {lockingDonorId === match.donor_id ? (
-                              <Loader2 size={18} className="animate-spin" />
+                              <Loader2 size={20} className="animate-spin" />
                             ) : (
                               <>
-                                <Phone size={18} /> Contact & Lock Donor
+                                <Phone size={20} /> Contact & Lock Donor
                               </>
                             )}
                           </button>
                         ) : (
-                          <div className="w-full relative z-10 flex items-center justify-center gap-2 bg-gray-100 text-gray-500 font-bold py-3 px-4 rounded-xl">
-                            <CheckCircle2 size={18} /> Patient Fulfilled
+                          <div className="w-full relative z-10 flex items-center justify-center gap-2 bg-gray-100 text-gray-500 font-bold py-4 px-4 rounded-xl border border-gray-200">
+                            <CheckCircle2 size={20} /> Patient Fulfilled
                           </div>
                         )}
                       </motion.div>

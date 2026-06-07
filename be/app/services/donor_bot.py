@@ -78,15 +78,23 @@ async def handle_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logger.info(f"No more donors for request {match_req.request_id}")
 
 
-async def notify_donor_via_telegram(match_id: str, donor_name: str, patient_name: str, hospital_name: str, distance_km: float, reason: str = ""):
+async def notify_donor_via_telegram(match_id: str, donor_name: str, patient_name: str, hospital_name: str, distance_km: float, reason: str = "", urgency: str = "NORMAL"):
     from telegram import Bot
     if not TELEGRAM_DONOR_TOKEN or not TELEGRAM_DONOR_CHAT_ID:
         logger.warning(f"Missing TELEGRAM_BOT_TOKEN_2 or TELEGRAM_CHAT_ID_2, skipping donor notification.")
         return
         
     bot = Bot(token=TELEGRAM_DONOR_TOKEN)
+    
+    color_bar = "⚪️ ⚪️ ⚪️ ⚪️ ⚪️ [ NORMAL ]"
+    if urgency.upper() == "URGENT":
+        color_bar = "🟡 🟡 🟡 🟡 🟡 [ URGENT ]"
+    elif urgency.upper() == "CRITICAL":
+        color_bar = "🔴 🔴 🔴 🔴 🔴 [ CRITICAL ]"
+        
     msg = (
-        f"🚨 URGENT MATCH ALERT 🚨\n\n"
+        f"{color_bar}\n"
+        f"🚨 MATCH ALERT 🚨\n\n"
         f"Hello {donor_name}, you have been matched with a patient in need!\n"
         f"Patient: {patient_name}\n"
         f"Location: {hospital_name} ({distance_km:.1f} km away)\n\n"

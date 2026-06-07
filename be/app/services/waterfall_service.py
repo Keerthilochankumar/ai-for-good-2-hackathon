@@ -43,6 +43,7 @@ async def trigger_next_donor(request_id: uuid.UUID):
             patient_name=blood_req.patient_name,
             hospital_name=blood_req.hospital_name,
             distance_km=next_match.distance_km,
-            reason="You are the next best match in our system."
+            reason="You are the next best match in our system.",
+            urgency=blood_req.urgency.value
         )
         return True

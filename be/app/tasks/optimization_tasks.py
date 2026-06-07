@@ -125,7 +125,8 @@ async def run_ilp_batch_async():
                     patient_name=top_req.patient_name,
                     hospital_name=top_req.hospital_name,
                     distance_km=top_dist,
-                    reason=top_reason
+                    reason=top_reason,
+                    urgency=top_req.urgency.value
                 )
         
         await session.commit()
@@ -218,7 +219,8 @@ async def run_ilp_single_async(request_id: uuid.UUID):
                 patient_name=req.patient_name,
                 hospital_name=req.hospital_name,
                 distance_km=top_match.distance_km,
-                reason=top_reason
+                reason=top_reason,
+                urgency=req.urgency.value
             )
         
         logger.info(f"Successfully created {len(new_match_requests)} matches for request {request_id}.")

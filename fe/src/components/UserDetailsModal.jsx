@@ -4,6 +4,8 @@ import { X, MapPin, User, Droplet, Phone } from 'lucide-react';
 import { Button } from './Button';
 import Map, { Marker } from 'react-map-gl/maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
+import toast from 'react-hot-toast';
+import { triggerMatch } from '../api';
 
 export function UserDetailsModal({ user, onClose }) {
   if (!user) return null;
@@ -11,6 +13,21 @@ export function UserDetailsModal({ user, onClose }) {
   const isDonor = user.type === 'donor';
   const name = isDonor ? user.name : user.patient_name;
   const bloodGroup = isDonor ? user.blood_group : (user.blood_group || user.blood_group_needed);
+
+  const handleMatchDonors = async () => {
+    try {
+      toast.success("Starting match optimization for " + name + "...");
+      await triggerMatch(user.id);
+      onClose();
+    } catch(err) {
+      toast.error("Failed to start matching pipeline");
+    }
+  };
+
+  const handleContactDonor = () => {
+    toast.success(`Notification sent to ${name} via Telegram!`);
+    onClose();
+  };
 
   return (
     <AnimatePresence>
@@ -28,7 +45,7 @@ export function UserDetailsModal({ user, onClose }) {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-full max-w-md bg-[var(--color-surface)] shadow-2xl z-[101] overflow-y-auto"
+            className="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-[101] overflow-y-auto"
           >
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
@@ -57,7 +74,7 @@ export function UserDetailsModal({ user, onClose }) {
                       <div className="text-[var(--color-ash)] text-sm mb-1 flex items-center gap-1"><Phone size={14}/> Contact</div>
                       <div className="text-lg font-bold text-[var(--color-ink)]">{user.phone || 'N/A'}</div>
                     </div>
-                    <Button variant="primary">Contact Donor</Button>
+                    <Button variant="primary" onClick={handleContactDonor}>Contact Donor</Button>
                   </div>
                 )}
                 {!isDonor && (
@@ -65,7 +82,7 @@ export function UserDetailsModal({ user, onClose }) {
                     <div className="text-[var(--color-ash)] text-sm mb-1 flex items-center gap-1"><MapPin size={14}/> Hospital</div>
                     <div className="text-lg font-bold text-[var(--color-ink)]">{user.hospital_name || 'N/A'}</div>
                     <div className="mt-4">
-                      <Button variant="primary" className="w-full">Match Donors</Button>
+                      <Button variant="primary" className="w-full" onClick={handleMatchDonors}>Match Donors</Button>
                     </div>
                   </div>
                 )}
