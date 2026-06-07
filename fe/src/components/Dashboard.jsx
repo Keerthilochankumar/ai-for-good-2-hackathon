@@ -14,7 +14,7 @@ export function Dashboard() {
   const [stats, setStats] = useState({ totalDonors: 0, totalPatients: 0, successRate: 0, ratio: 0, bgCounts: {} });
 
   // Pipeline Events WebSocket
-  const { events, isConnected } = usePipelineEvents('ws://dev-be-y3xjsd-eb65f5-18-207-163-209.sslip.io/api/v1/ws/events');
+  const { events, isConnected } = usePipelineEvents('wss://dev-be-y3xjsd-eb65f5-18-207-163-209.sslip.io/api/v1/ws/events');
 
   // Extract active matching state from events
   const { activePatientId, activeMatches } = useMemo(() => {
@@ -156,8 +156,8 @@ export function Dashboard() {
               <button
                 onClick={() => setBloodFilter('ALL')}
                 className={`py-3 px-4 rounded-xl font-bold transition-all ${bloodFilter === 'ALL'
-                    ? 'bg-[var(--color-ink)] text-white shadow-md'
-                    : 'bg-white text-[var(--color-ink)] border border-[var(--color-hairline)] hover:border-gray-300 hover:shadow-sm'
+                  ? 'bg-[var(--color-ink)] text-white shadow-md'
+                  : 'bg-white text-[var(--color-ink)] border border-[var(--color-hairline)] hover:border-gray-300 hover:shadow-sm'
                   }`}
               >
                 ALL
@@ -167,8 +167,8 @@ export function Dashboard() {
                   key={bg}
                   onClick={() => setBloodFilter(bg)}
                   className={`py-3 px-4 rounded-xl font-bold transition-all flex justify-between items-center ${bloodFilter === bg
-                      ? 'bg-[var(--color-primary)] text-white shadow-md'
-                      : 'bg-white text-[var(--color-ink)] border border-[var(--color-hairline)] hover:border-gray-300 hover:shadow-sm'
+                    ? 'bg-[var(--color-primary)] text-white shadow-md'
+                    : 'bg-white text-[var(--color-ink)] border border-[var(--color-hairline)] hover:border-gray-300 hover:shadow-sm'
                     }`}
                 >
                   <span>{bg}</span>

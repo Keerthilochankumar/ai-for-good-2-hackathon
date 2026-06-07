@@ -5,7 +5,7 @@ import { Activity, CheckCircle2 } from 'lucide-react';
 import { sendTelegramMessage } from '../services/telegram';
 
 export function EventsPage() {
-  const { events, isConnected } = usePipelineEvents('ws://dev-be-y3xjsd-eb65f5-18-207-163-209.sslip.io/api/v1/ws/events');
+  const { events, isConnected } = usePipelineEvents('wss://dev-be-y3xjsd-eb65f5-18-207-163-209.sslip.io/api/v1/ws/events');
   const processedMatches = useRef(new Set());
 
   // Monitor for MATCH_FOUND events to trigger Telegram message
